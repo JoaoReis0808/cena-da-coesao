@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Cena da Coesão</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: one column, max 820px. Azulejo band on top, then one screen at a time: menu, study, recall map, quiz, results. */
+:root{
+  --bg:#edf1f7; --surface:#ffffff; --ink:#15213b; --muted:#5a6884; --line:#d3dbe8;
+  --azul:#1f4fa8; --azul-soft:#dde6f6; --gas:#f5c542; --gas-ink:#2a1f00;
+  --good:#1d8a4b; --good-soft:#dcf2e4; --bad:#c3372c; --bad-soft:#f8e0dd;
+  --f-display:"Young Serif",Georgia,"Times New Roman",serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1424; --surface:#151f37; --ink:#e7ecf6; --muted:#9ba9c6; --line:#27345a;
+  --azul:#86a9f2; --azul-soft:#1e2c52; --gas:#f2c14e; --gas-ink:#231a00;
+  --good:#53c886; --good-soft:#123522; --bad:#ff7b6c; --bad-soft:#3e1a17; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1424; --surface:#151f37; --ink:#e7ecf6; --muted:#9ba9c6; --line:#27345a;
+  --azul:#86a9f2; --azul-soft:#1e2c52; --gas:#f2c14e; --gas-ink:#231a00;
+  --good:#53c886; --good-soft:#123522; --bad:#ff7b6c; --bad-soft:#3e1a17; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.5;margin:0}
+.tiles{height:22px;background-color:var(--azul);
+  background-image:radial-gradient(circle at 50% 50%,var(--bg) 0 3px,transparent 3.5px),
+  conic-gradient(from 45deg,var(--azul-soft) 0 25%,transparent 0 50%,var(--azul-soft) 0 75%,transparent 0);
+  background-size:22px 22px;opacity:.9}
+.wrap{max-width:820px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:22px 48px;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:clamp(2rem,6vw,2.9rem)}
+h1 span{color:var(--azul)}
+h2{font-size:1.5rem}
+h3{font-size:1.15rem}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--azul);outline-offset:2px}
+.lead{color:var(--muted);max-width:58ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.small{font-size:.88rem;color:var(--muted)}
+
+.btn{background:var(--azul);color:var(--surface);border:0;border-radius:8px;padding:12px 22px;font-weight:700;font-size:1.02rem;box-shadow:0 3px 0 color-mix(in srgb,var(--azul) 55%,#000)}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 color-mix(in srgb,var(--azul) 55%,#000)}
+.ghost{background:transparent;border:2px solid var(--line);border-radius:8px;padding:9px 16px;font-weight:700}
+.ghost:hover{border-color:var(--azul)}
+.back{align-self:flex-start;background:none;border:0;color:var(--azul);font-weight:700;padding:4px 0}
+
+/* home menu */
+.menu{display:grid;gap:12px}
+.card{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:center;text-align:left;background:var(--surface);border:2px solid var(--line);border-radius:10px;padding:18px 20px;transition:border-color .15s,transform .15s}
+.card:hover{border-color:var(--azul);transform:translateY(-2px)}
+.card .n{grid-row:span 2;font-family:var(--f-display);font-size:2.4rem;color:var(--azul);width:1.4em;text-align:center}
+.card b{font-family:var(--f-display);font-weight:400;font-size:1.3rem}
+.card small{color:var(--muted);font-size:.95rem}
+
+/* chips */
+.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.chip{text-align:left;background:transparent;border:2px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.chip b{font-size:1.05rem}
+.chip small{color:var(--muted);font-size:.88rem}
+.chip[aria-pressed="true"]{border-color:var(--azul);background:var(--azul-soft)}
+.disclaimer{border:2px dashed var(--gas);background:color-mix(in srgb,var(--gas) 14%,var(--surface));border-radius:8px;padding:12px 14px;font-size:.95rem}
+.disclaimer b{display:block}
+
+/* definitions */
+.defs{display:grid;gap:10px}
+.def{border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.def .top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
+.def .nm{font-family:var(--f-display);font-size:1.2rem;color:var(--azul)}
+.def .gp{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.def .mot{font-size:.95rem}
+.def .ex{font-size:.95rem;color:var(--muted)}
+.hide-names .def .nm{filter:blur(7px);cursor:pointer;user-select:none}
+.hide-names .def .nm.show{filter:none}
+.grouptitle{font-family:var(--f-display);font-size:1.25rem;padding-top:6px}
+
+/* highlights */
+mark.alvo{background:var(--gas);color:var(--gas-ink);border-radius:3px;padding:0 3px}
+mark.gap{font-weight:700;padding:0 6px}
+.ref{text-decoration:underline;text-decoration-style:dashed;text-decoration-color:var(--azul);text-decoration-thickness:2px;text-underline-offset:4px}
+
+/* quiz */
+.hud{display:flex;flex-wrap:wrap;gap:6px 22px;align-items:baseline;justify-content:space-between}
+.hud div{display:flex;gap:6px;align-items:baseline}
+.hud .lab{color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.08em}
+.hud b{font-family:var(--f-display);font-weight:400;font-size:1.45rem;font-variant-numeric:tabular-nums}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--azul);transition:width .3s}
+.tag{font-size:.82rem;text-transform:uppercase;letter-spacing:.09em;color:var(--azul);font-weight:700}
+.ask{font-weight:700}
+.frase{margin:0;font-family:var(--f-display);font-size:clamp(1.12rem,3.2vw,1.38rem);line-height:1.6;white-space:pre-line;border-left:4px solid var(--azul-soft);padding:4px 0 4px 16px}
+.src{font-size:.88rem;color:var(--muted);font-style:italic}
+.legend{font-size:.82rem;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
+.defbox{background:var(--azul-soft);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.nomebig{font-family:var(--f-display);font-size:1.6rem;color:var(--azul)}
+.missing{display:flex;flex-wrap:wrap;gap:8px}
+.missing span{border:2px solid var(--line);border-radius:6px;padding:6px 12px;font-weight:700}
+.missing span.q{border-style:dashed;border-color:var(--azul);color:var(--azul)}
+
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:560px){.opts{grid-template-columns:1fr}}
+.opt{display:flex;gap:12px;align-items:center;text-align:left;background:var(--surface);border:2px solid var(--line);border-radius:8px;padding:12px 14px;min-height:62px;transition:border-color .12s,background .12s}
+.opt:hover:not(:disabled){border-color:var(--azul)}
+.opt .k{flex:none;width:26px;height:26px;border-radius:6px;background:var(--azul-soft);color:var(--azul);display:grid;place-items:center;font-weight:700;font-size:.85rem}
+.opt .t{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}
+.opt .t small{color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
+.opt .t span{font-weight:700}
+.opt.long .t span{font-weight:400;font-size:.95rem}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--good);background:var(--good-soft)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.dim{opacity:.5}
+
+.write{display:flex;gap:10px;flex-wrap:wrap}
+.write input{flex:1 1 240px;min-width:0;font:inherit;font-size:1.1rem;padding:12px 14px;border:2px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.write input:focus{border-color:var(--azul);outline:none}
+.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+.fb{border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;border-left:6px solid var(--good);background:var(--good-soft)}
+.fb.bad{border-left-color:var(--bad);background:var(--bad-soft)}
+.fb strong{font-family:var(--f-display);font-weight:400;font-size:1.3rem}
+.fb.good strong{color:var(--good)}.fb.bad strong{color:var(--bad)}
+.fb .note{font-weight:700}
+
+/* recall map */
+.mapgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:600px){.mapgrid{grid-template-columns:1fr}}
+.branch{display:flex;flex-direction:column;gap:8px;min-width:0}
+.sub{border-left:3px solid var(--azul-soft);padding-left:10px;display:flex;flex-direction:column;gap:6px;margin-left:6px}
+.slot{border:2px dashed var(--line);border-radius:6px;padding:7px 12px;font-weight:700;color:var(--muted);min-height:40px;display:flex;align-items:center;letter-spacing:.04em}
+.slot.head{font-family:var(--f-display);font-weight:400;font-size:1.1rem}
+.slot.ok{border-style:solid;border-color:var(--good);background:var(--good-soft);color:var(--ink);letter-spacing:0;animation:pop .35s}
+.slot.lost{border-style:solid;border-color:var(--bad);background:var(--bad-soft);color:var(--ink);letter-spacing:0}
+@keyframes pop{50%{transform:scale(1.05)}}
+.root{font-family:var(--f-display);font-size:1.2rem;text-align:center;padding:8px;border-radius:6px;background:var(--azul-soft);color:var(--azul)}
+
+/* end */
+.big{font-family:var(--f-display);font-size:clamp(3rem,12vw,4.8rem);line-height:1;color:var(--azul);font-variant-numeric:tabular-nums}
+.stats{display:flex;gap:8px 26px;flex-wrap:wrap;color:var(--muted)}
+.stats b{color:var(--ink)}
+.review{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:14px}
+.review li{border-left:4px solid var(--bad);padding:2px 0 2px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.review .frase{font-size:1.05rem;border:0;padding:0}
+.review .ra{color:var(--good);font-weight:700}
+.foot{font-size:.84rem;color:var(--muted)}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+</head><body>
+<div class="tiles" aria-hidden="true"></div>
+<div class="wrap">
+
+<header class="row" style="justify-content:space-between">
+  <h1>Cena da <span>Coesão</span></h1>
+</header>
+
+<!-- HOME -->
+<section id="home" style="display:flex;flex-direction:column;gap:16px">
+  <p class="lead">Coesão gramatical e lexical para o exame de Português. Três jogos, rondas de 10 perguntas, e no fim vês o que falhaste e porquê.</p>
+  <div class="menu">
+    <button class="card" data-go="defs"><span class="n">1</span><b>Definições</b><small>O que é cada coesão e para que serve. Lê as fichas e depois faz o quiz.</small></button>
+    <button class="card" data-go="memo"><span class="n">2</span><b>Decorar os nomes</b><small>Preenche o mapa completo de memória, ou descobre qual é o nome que falta.</small></button>
+    <button class="card" data-go="setup"><span class="n">3</span><b>Adivinhar a coesão</b><small>Frases e versos de Cesário Verde. Fácil, médio ou difícil, com escolha múltipla ou resposta escrita.</small></button>
+  </div>
+  <p class="foot">Nomenclatura dos manuais do secundário (Dicionário Terminológico). Alguns manuais chamam «reiteração» à repetição ou arrumam os tipos de outra forma; confirma com o teu caderno.</p>
+</section>
+
+<!-- DEFINITIONS -->
+<section id="defs" class="panel" hidden>
+  <button class="back" data-go="home">← Menu</button>
+  <h2>Definições e motivos</h2>
+  <p class="lead">Cada ficha diz o que a coesão faz, porque se usa e dá um exemplo. O realce amarelo é o elemento que tem a coesão; o sublinhado tracejado é aquilo a que se liga.</p>
+  <div class="row">
+    <button class="btn" id="defsQuiz">Fazer o quiz de definições</button>
+    <button class="ghost" id="hideNames" aria-pressed="false">Esconder os nomes</button>
+  </div>
+  <div id="defList" class="defs"></div>
+</section>
+
+<!-- MEMO -->
+<section id="memo" class="panel" hidden>
+  <button class="back" data-go="home">← Menu</button>
+  <h2>Decorar os nomes</h2>
+  <div class="row">
+    <button class="chip" style="flex:1 1 220px" id="memoWrite" aria-pressed="true"><b>Escrever de memória</b><small>Escreve os 18 nomes do mapa, por qualquer ordem.</small></button>
+    <button class="chip" style="flex:1 1 220px" id="memoFalta" aria-pressed="false"><b>Qual falta?</b><small>Vês um grupo com um buraco e escolhes o nome que falta.</small></button>
+  </div>
+  <div id="recall" style="display:flex;flex-direction:column;gap:14px">
+    <div class="hud">
+      <div><span class="lab">Encontrados</span><b id="rCount">0/18</b></div>
+      <div><span class="lab">Tempo</span><b id="rTime">0:00</b></div>
+      <div class="small" id="rBest"></div>
+    </div>
+    <form class="write" id="rForm" autocomplete="off">
+      <input id="rInput" type="text" placeholder="Escreve um nome, ex.: anafora" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="Nome de uma coesão">
+    </form>
+    <p class="small">Aqui não interessa a forma: maiúsculas e acentos são aceites. O nome entra sozinho no mapa quando estiver certo.</p>
+    <div class="root">Coesão textual</div>
+    <div class="mapgrid" id="map"></div>
+    <div class="row">
+      <button class="ghost" id="rHint">Mostrar primeiras letras</button>
+      <button class="ghost" id="rGiveUp">Desistir e ver o que falta</button>
+      <button class="ghost" id="rReset">Recomeçar</button>
+    </div>
+  </div>
+  <div id="faltaBox" hidden style="display:flex;flex-direction:column;gap:12px">
+    <p class="lead">Ronda de 10. Cada pergunta mostra um grupo do mapa com um nome tapado.</p>
+    <button class="btn" style="align-self:flex-start" id="faltaGo">Começar</button>
+  </div>
+</section>
+
+<!-- SETUP -->
+<section id="setup" class="panel" hidden>
+  <button class="back" data-go="home">← Menu</button>
+  <h2>Adivinhar a coesão</h2>
+  <h3>Dificuldade</h3>
+  <div class="chips" id="levels"></div>
+  <h3>Tipo de resposta</h3>
+  <div class="chips" id="modes"></div>
+  <div class="disclaimer" id="disc" hidden>
+    <b>Atenção: na resposta escrita, escreve só com letras minúsculas e sem acentos nem cedilhas.</b>
+    Assim um erro de ortografia não te tira a resposta: escreve <code>anafora</code>, <code>hiperonimia</code>, <code>coesao interfrasica</code>. Uma resposta com maiúsculas ou acentos (ex.: «Anáfora») conta como errada, mesmo que o nome esteja certo. Basta o mecanismo concreto: «anafora» ou «coesao referencial anaforica» estão ambas certas; só «referencial» não chega.
+  </div>
+  <button class="btn" style="align-self:flex-start" id="guessGo">Começar</button>
+  <p class="small" id="guessBest"></p>
+</section>
+
+<!-- QUIZ -->
+<section id="quiz" class="panel" hidden>
+  <div class="hud">
+    <div><span class="lab">Pergunta</span><b id="hQ">1/10</b></div>
+    <div><span class="lab">Pontos</span><b id="hS">0</b></div>
+    <div><span class="lab">Sequência</span><b id="hK">0</b></div>
+  </div>
+  <div class="bar"><i id="hBar" style="width:0"></i></div>
+  <div class="tag" id="qTag"></div>
+  <div id="qPrompt" style="display:flex;flex-direction:column;gap:12px"></div>
+  <p class="src" id="qSrc"></p>
+  <div class="legend" id="qLegend"><span><mark class="alvo">realce</mark> elemento a classificar</span><span><span class="ref">tracejado</span> aquilo a que se liga</span><span><mark class="alvo gap">Ø</mark> palavra omitida</span></div>
+  <div class="opts" id="opts"></div>
+  <form class="write" id="wForm" autocomplete="off" hidden>
+    <input id="wInput" type="text" placeholder="minúsculas, sem acentos" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="A tua resposta">
+    <button class="btn" type="submit">Responder</button>
+  </form>
+  <p class="small" id="wNote" hidden>Só minúsculas e sem acentos nem cedilhas (ex.: <code>hiponimia</code>). Com maiúsculas ou acentos conta como errado.</p>
+  <div class="fb" id="fb" hidden>
+    <strong id="fbT"></strong>
+    <p class="note" id="fbN" hidden></p>
+    <p id="fbA"></p>
+    <p id="fbE"></p>
+    <button class="btn" style="align-self:flex-start" id="nextBtn">Seguinte</button>
+  </div>
+  <button class="back" id="quit">← Sair da ronda</button>
+</section>
+
+<!-- END -->
+<section id="end" class="panel" hidden>
+  <h2 id="endTitle">Ronda concluída</h2>
+  <div class="big" id="endScore">0</div>
+  <div class="stats" id="endStats"></div>
+  <div id="reviewBox" style="display:flex;flex-direction:column;gap:12px"></div>
+  <div class="row">
+    <button class="btn" id="again">Jogar outra vez</button>
+    <button class="ghost" data-go="home">Menu</button>
+  </div>
+</section>
+
+<p class="foot">Os versos são de Cesário Verde («O Sentimento dum Ocidental», «De Tarde», «Num Bairro Moderno», «Cristalizações»). A pontuação pode variar ligeiramente entre edições. As frases sem fonte foram escritas para o jogo.</p>
+</div>
+
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function store(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function fmt(s){
+  var h=esc(s);
+  h=h.replace(/\[\[_\]\]/g,'<mark class="alvo gap" title="palavra omitida">Ø</mark>');
+  h=h.replace(/\[\[([\s\S]+?)\]\]/g,'<mark class="alvo">$1</mark>');
+  h=h.replace(/\{\{([\s\S]+?)\}\}/g,'<span class="ref">$1</span>');
+  return h;
+}
+
+/* ---------- the 14 mechanisms ---------- */
+var D=[
+ {k:"frasica",g:"Gramatical",s:"",nome:"Coesão frásica",lab:"Frásica (concordância)",
+  def:"Liga as palavras dentro da mesma frase, sobretudo pela concordância: o verbo concorda com o sujeito em número e pessoa; determinantes e adjetivos concordam com o nome em género e número. Inclui também a ordem correta das palavras.",
+  mot:"Serve para a frase estar gramaticalmente certa: cada palavra combina com aquela de que depende.",
+  ex:"As {{varinas}} [[descalças]] [[apinham-se]] no bairro.",alias:["frasica","concordancia","frasica concordancia","concordancia frasica"]},
+ {k:"interfrasica",g:"Gramatical",s:"",nome:"Coesão interfrásica",lab:"Interfrásica",
+  def:"Liga frases, orações ou parágrafos através de conectores (conjunções, locuções e advérbios conectivos) que mostram a relação lógica entre eles: adição, oposição, causa, consequência, conclusão, condição, concessão.",
+  mot:"Serve para tornar clara a relação lógica entre as ideias.",
+  ex:"Faz frio. [[Mas]] vibra uma imensa claridade crua.",alias:["interfrasica","conexao interfrasica"]},
+ {k:"temporal",g:"Gramatical",s:"",nome:"Coesão temporal",lab:"Temporal",
+  def:"Organiza os acontecimentos no tempo através da correlação dos tempos e modos verbais e de advérbios e expressões de tempo (depois, entretanto, pouco depois, ao anoitecer).",
+  mot:"Serve para o leitor perceber quando as coisas acontecem e por que ordem.",
+  ex:"[[Pouco depois]], nós acampámos.",alias:["temporal"]},
+ {k:"anafora",g:"Gramatical",s:"Referencial",nome:"Coesão referencial: anáfora",lab:"Anáfora",
+  def:"Retoma um elemento que já apareceu antes no texto (o antecedente), através de pronomes, determinantes possessivos ou demonstrativos, advérbios (lá, aí) ou pronomes relativos (que, onde).",
+  mot:"Serve para evitar repetições e manter o leitor a pensar na mesma entidade.",
+  ex:"{{Cesário}} vivia em Lisboa. [[Ele]] detestava a cidade.",alias:["anafora","anaforica"]},
+ {k:"catafora",g:"Gramatical",s:"Referencial",nome:"Coesão referencial: catáfora",lab:"Catáfora",
+  def:"Antecipa um elemento que só aparece mais à frente no texto. Primeiro surge a palavra que aponta (isto, o seguinte, uma coisa), só depois aquilo a que se refere.",
+  mot:"Serve para criar expectativa e anunciar o que vem a seguir.",
+  ex:"O poeta só queria [[isto]]: {{fugir para o campo}}.",alias:["catafora","cataforica"]},
+ {k:"elipse",g:"Gramatical",s:"Referencial",nome:"Coesão referencial: elipse",lab:"Elipse",
+  def:"Omite uma palavra ou expressão já conhecida (muitas vezes o sujeito, um verbo ou um complemento), que o leitor recupera pelo contexto.",
+  mot:"Serve para dar economia ao texto sem perder o sentido.",
+  ex:"O poeta saiu de casa e [[_]] caminhou até ao cais.",alias:["elipse","eliptica"]},
+ {k:"repeticao",g:"Lexical",s:"",nome:"Coesão lexical: repetição",lab:"Repetição (reiteração)",
+  def:"Volta a usar-se a mesma palavra ou expressão para retomar o referente.",
+  mot:"Serve para dar ênfase e manter o tema bem presente.",
+  ex:"Era uma {{cidade}} triste, uma [[cidade]] de gás e sombra.",alias:["repeticao","reiteracao","repeticao reiteracao","reiteracao repeticao"]},
+ {k:"sinonimia",g:"Lexical",s:"Substituição",nome:"Substituição por sinonímia",lab:"Sinonímia",
+  def:"Uma palavra é retomada por outra de significado equivalente (sinónimo).",
+  mot:"Serve para evitar a repetição sem mudar o sentido.",
+  ex:"Sentia uma {{tristeza}} enorme; aquela [[melancolia]] não passava.",alias:["sinonimia"]},
+ {k:"antonimia",g:"Lexical",s:"Substituição",nome:"Substituição por antonímia",lab:"Antonímia",
+  def:"Uma palavra liga-se a outra de sentido oposto (antónimo), que retoma o mesmo assunto pelo contraste.",
+  mot:"Serve para criar contraste mantendo as ideias ligadas.",
+  ex:"De {{dia}}, a rua fervilhava; de [[noite]], calava-se.",alias:["antonimia"]},
+ {k:"hiperonimia",g:"Lexical",s:"Substituição",nome:"Substituição por hiperonímia",lab:"Hiperonímia",
+  def:"Uma palavra é retomada por outra de sentido mais geral, que a inclui (papoulas → flores). A segunda palavra é o hiperónimo.",
+  mot:"Serve para generalizar e evitar a repetição.",
+  ex:"Colheu {{papoulas}} no campo. As [[flores]] eram rubras.",alias:["hiperonimia"]},
+ {k:"hiponimia",g:"Lexical",s:"Substituição",nome:"Substituição por hiponímia",lab:"Hiponímia",
+  def:"Uma palavra é retomada por outra de sentido mais específico, incluída na primeira (flores → papoulas). A segunda palavra é o hipónimo.",
+  mot:"Serve para especificar e dar pormenor.",
+  ex:"Colheu {{flores}} no campo. As [[papoulas]] eram rubras.",alias:["hiponimia"]},
+ {k:"holonimia",g:"Lexical",s:"Substituição",nome:"Substituição por holonímia",lab:"Holonímia",
+  def:"Uma palavra que designa uma parte é retomada pela palavra que designa o todo (velas → navio). A segunda palavra é o holónimo.",
+  mot:"Serve para alargar a perspetiva, da parte para o todo.",
+  ex:"As {{velas}} rasgaram-se e o [[navio]] ficou à deriva.",alias:["holonimia"]},
+ {k:"meronimia",g:"Lexical",s:"Substituição",nome:"Substituição por meronímia",lab:"Meronímia",
+  def:"Uma palavra que designa um todo é retomada pela palavra que designa uma das suas partes (navio → velas). A segunda palavra é o merónimo.",
+  mot:"Serve para focar um pormenor do todo já referido.",
+  ex:"O {{navio}} entrou no Tejo; as [[velas]] brilhavam ao sol.",alias:["meronimia"]},
+ {k:"equivalente",g:"Lexical",s:"Substituição",nome:"Substituição por expressão equivalente",lab:"Expressão equivalente",
+  def:"Uma palavra é retomada por uma expressão (normalmente nominal) que designa a mesma entidade através de uma característica dela, por exemplo uma perífrase.",
+  mot:"Serve para evitar a repetição e acrescentar informação sobre o referente.",
+  ex:"{{Cesário Verde}} morreu em 1886. [[O poeta de «O Sentimento dum Ocidental»]] tinha 31 anos.",alias:["expressao equivalente","expressao nominal equivalente","nominal equivalente","equivalente","perifrase"]}
+];
+var BY={};D.forEach(function(d){BY[d.k]=d});
+var CONF={frasica:["interfrasica","temporal","elipse"],interfrasica:["temporal","frasica","anafora"],temporal:["interfrasica","anafora","frasica"],
+ anafora:["catafora","elipse","equivalente","repeticao"],catafora:["anafora","elipse"],elipse:["anafora","catafora","frasica"],
+ repeticao:["sinonimia","anafora"],sinonimia:["repeticao","hiperonimia","equivalente","antonimia"],antonimia:["sinonimia","hiponimia"],
+ hiperonimia:["hiponimia","holonimia","sinonimia"],hiponimia:["hiperonimia","meronimia"],holonimia:["meronimia","hiperonimia"],
+ meronimia:["holonimia","hiponimia"],equivalente:["sinonimia","hiperonimia","anafora"]};
+var NEVER={temporal:["interfrasica"]};
+function distractors(k,fixed){
+  var no=NEVER[k]||[];
+  var out=(fixed||[]).filter(function(x){return no.indexOf(x)<0}).slice(0,3);
+  shuffle(CONF[k]).forEach(function(x){if(out.length<2&&out.indexOf(x)<0&&no.indexOf(x)<0)out.push(x)});
+  shuffle(D.map(function(d){return d.k})).forEach(function(x){if(out.length<3&&x!==k&&out.indexOf(x)<0&&no.indexOf(x)<0)out.push(x)});
+  return out;
+}
+function mechOpt(k){var d=BY[k];return {id:k,main:d.lab,sub:d.s?d.g+" · "+d.s:"Coesão "+d.g.toLowerCase()}}
+
+/* ---------- sentence bank: [text, key, explanation, source, fixed distractors] ---------- */
+var OSO="Cesário Verde, «O Sentimento dum Ocidental»",DT="Cesário Verde, «De Tarde»",NBM="Cesário Verde, «Num Bairro Moderno»",CR="Cesário Verde, «Cristalizações»";
+var BANK={
+facil:[
+ ["{{Cesário Verde}} percorria Lisboa ao anoitecer. [[Ele]] observava tudo com olhos de pintor.","anafora","O pronome «Ele» retoma «Cesário Verde», que já tinha aparecido antes. Retomar algo anterior com um pronome é anáfora.",""],
+ ["O poeta sentia uma enorme {{tristeza}} nas ruas. Aquela [[melancolia]] acompanhava-o sempre.","sinonimia","«Melancolia» tem praticamente o mesmo significado de «tristeza»: substituição por um sinónimo.",""],
+ ["Na praça vendiam-se {{maçãs}} e {{pêras}}. A rapariga arrumava a [[fruta]] na giga.","hiperonimia","«Fruta» é uma palavra mais geral que inclui maçãs e pêras. Retomar com a palavra mais geral é hiperonímia.",""],
+ ["A vendedeira trazia muitos {{legumes}}. As [[couves]] ainda estavam molhadas.","hiponimia","«Couves» é um tipo de legume, ou seja, é mais específico. Retomar com a palavra mais específica é hiponímia.",""],
+ ["Ao fundo via-se {{um navio}}. As [[velas]] brilhavam ao sol.","meronimia","As velas são uma parte do navio. O todo aparece primeiro e é retomado por uma parte: meronímia.",""],
+ ["O {{telhado}} estava coberto de fuligem. A [[casa]] parecia abandonada.","holonimia","O telhado é parte da casa. A parte aparece primeiro e é retomada pelo todo: holonímia.",""],
+ ["As ruas estavam {{cheias}} de manhã. À noite, ficavam [[vazias]].","antonimia","«Vazias» é o contrário de «cheias». O contraste liga as duas frases: antonímia.",""],
+ ["O dia estava frio, [[mas]] o sol brilhava sobre o rio.","interfrasica","«Mas» é um conector adversativo que liga duas orações com ideias opostas: coesão interfrásica.",""],
+ ["As varinas trabalharam toda a manhã. [[Depois]], regressaram ao bairro.","temporal","«Depois» situa a segunda ação a seguir à primeira no tempo: coesão temporal. Alguns manuais chamam-lhe conector temporal, por isso na resposta escrita também se aceita «interfrasica».","",null,1],
+ ["Lisboa era a {{cidade}} do poeta. Era uma [[cidade]] de contrastes.","repeticao","A mesma palavra, «cidade», volta a ser usada: coesão lexical por repetição.",""],
+ ["A rapariga pousou a giga e [[_]] sorriu para o poeta.","elipse","O sujeito de «sorriu» (a rapariga) não é repetido: fica subentendido. Omitir algo já conhecido é elipse.",""],
+ ["O poeta só desejava [[isto]]: {{fugir da cidade}}.","catafora","«Isto» aponta para algo que só aparece depois dos dois pontos. Antecipar o referente é catáfora.",""],
+ ["As {{vendedeiras}} [[cansadas]] voltavam a casa.","frasica","«Cansadas» está no feminino plural porque concorda com «vendedeiras». A concordância dentro da frase é coesão frásica.",""],
+ ["{{Cesário Verde}} morreu muito novo. [[O autor de «O Sentimento dum Ocidental»]] tinha apenas 31 anos.","equivalente","Cesário é retomado por uma expressão que o identifica por uma característica (ser o autor daquele poema): expressão equivalente.",""],
+ ["O poeta não saiu de casa [[porque]] chovia muito.","interfrasica","«Porque» é um conector causal: liga a consequência à causa. Coesão interfrásica.",""],
+ ["O poeta passeava pelo {{cais}}. [[Lá]], via os calafates a regressar.","anafora","O advérbio «Lá» retoma «cais», referido antes. Também é anáfora, feita por um advérbio.",""],
+ ["Faz frio. [[Mas]], depois duns dias de aguaceiros,\nVibra uma imensa claridade crua.","interfrasica","«Mas» opõe a ideia do frio à da claridade: conector adversativo, coesão interfrásica.",CR],
+ ["[[Pouco depois]], em cima duns penhascos,\nNós acampámos, inda o Sol se via;","temporal","«Pouco depois» situa o acampamento a seguir ao episódio anterior: coesão temporal. Alguns manuais chamam-lhe conector temporal, por isso na resposta escrita também se aceita «interfrasica».",DT,null,1],
+ ["{{As varinas}} chegaram cedo ao cais. [[Elas]] traziam canastras à cabeça.","anafora","O pronome «Elas» retoma «As varinas»: anáfora.",""],
+ ["O poeta conheceu {{uma rapariga}} na rua e ofereceu-[[lhe]] um sorriso tímido.","anafora","O pronome «lhe» retoma «uma rapariga», referida antes: anáfora.",""],
+ ["{{A rapariga}} pousou a giga no chão. [[A sua]] roupa estava rota.","anafora","O possessivo «sua» retoma «a rapariga»: anáfora.",""],
+ ["O poeta viveu sempre em {{Lisboa}} e [[aí]] escreveu os seus melhores versos.","anafora","O advérbio «aí» retoma «Lisboa»: anáfora por advérbio.",""],
+ ["Vi {{o livro de Cesário}} na montra e comprei-[[o]].","anafora","O pronome «o» retoma «o livro de Cesário»: anáfora.",""],
+ ["[[Este]] era o seu maior medo: {{morrer novo}}.","catafora","«Este» aponta para o que vem depois dos dois pontos: catáfora.",""],
+ ["O poeta escreveu [[o seguinte]]: {{a cidade adoece-me}}.","catafora","«O seguinte» anuncia uma frase que só aparece depois: catáfora.",""],
+ ["Só [[uma coisa]] o acalmava: {{o campo}}.","catafora","«Uma coisa» antecipa «o campo», que só surge no fim: catáfora.",""],
+ ["O poeta comprou um jornal e [[_]] leu-o no café.","elipse","O sujeito de «leu» (o poeta) não é repetido: elipse.",""],
+ ["A Maria gosta de poesia; o João, [[_]] de romances.","elipse","O verbo «gosta» não é repetido na segunda parte: elipse do verbo.",""],
+ ["— Vens comigo ao cais?\n— Vou [[_]].","elipse","A resposta omite «ao cais», que já se sabe pela pergunta: elipse.",""],
+ ["Os {{calafates}} [[voltavam]] cansados do trabalho.","frasica","«Voltavam» está na 3.ª pessoa do plural porque concorda com «os calafates»: coesão frásica.",""],
+ ["A {{rua}} [[comprida]] estava deserta.","frasica","«Comprida» está no feminino singular porque concorda com «rua»: coesão frásica.",""],
+ ["[[Nós]] {{acampámos}} perto dos penhascos.","frasica","O sujeito «Nós» e o verbo «acampámos» concordam na 1.ª pessoa do plural: coesão frásica.",""],
+ ["Estava cansado; [[no entanto]], continuou a caminhar.","interfrasica","«No entanto» é um conector adversativo: coesão interfrásica.",""],
+ ["[[Se]] chover amanhã, o piquenique fica adiado.","interfrasica","«Se» introduz uma condição: conector condicional, coesão interfrásica.",""],
+ ["O poeta escreveu versos notáveis, [[embora]] tenha morrido novo.","interfrasica","«Embora» é um conector concessivo: coesão interfrásica.",""],
+ ["Saiu cedo de casa [[e]] foi até ao rio.","interfrasica","«E» é um conector aditivo que junta as duas ações: coesão interfrásica.",""],
+ ["Estava muito calor, [[logo]] abriram as janelas.","interfrasica","«Logo» introduz a conclusão do que foi dito antes: conector conclusivo, coesão interfrásica.",""],
+ ["[[Naquela manhã]], o poeta acordou mais cedo do que o costume.","temporal","«Naquela manhã» situa a ação no tempo: coesão temporal.",""],
+ ["O poeta jantou e, [[em seguida]], saiu para a rua.","temporal","«Em seguida» marca que a saída aconteceu depois do jantar: coesão temporal. Alguns manuais chamam-lhe conector temporal, por isso na resposta escrita também se aceita «interfrasica».","",null,1],
+ ["[[Antigamente]], Lisboa era iluminada a gás.","temporal","«Antigamente» situa o facto no passado: coesão temporal.",""],
+ ["[[No dia seguinte]], a rapariga voltou ao mercado.","temporal","«No dia seguinte» marca a sequência no tempo: coesão temporal.",""],
+ ["O {{rio}} brilhava. O [[rio]] corria lento para o mar.","repeticao","A palavra «rio» é repetida: coesão lexical por repetição.",""],
+ ["Gostava das {{papoulas}}; as [[papoulas]] lembravam-lhe o campo.","repeticao","«Papoulas» volta a ser usada: repetição.",""],
+ ["O poeta estava {{contente}}. Sentia-se [[feliz]] no campo.","sinonimia","«Feliz» e «contente» têm significado equivalente: sinonímia.",""],
+ ["A {{casa}} era pequena, mas a [[habitação]] tinha muita luz.","sinonimia","«Habitação» é sinónimo de «casa»: sinonímia.",""],
+ ["Os {{operários}} saíam das fábricas; aqueles [[trabalhadores]] estavam exaustos.","sinonimia","«Trabalhadores» retoma «operários» com sentido equivalente: sinonímia.",""],
+ ["Lá fora fazia {{frio}}; dentro do café estava [[calor]].","antonimia","«Calor» é o oposto de «frio»: antonímia.",""],
+ ["O campo era {{alegre}}; a cidade, [[triste]].","antonimia","«Triste» opõe-se a «alegre»: antonímia.",""],
+ ["Os {{ricos}} passeavam de carruagem; os [[pobres]] andavam descalços.","antonimia","«Pobres» é o oposto de «ricos»: antonímia.",""],
+ ["Ouviam-se {{gaivotas}} no cais. As [[aves]] pousavam nos mastros.","hiperonimia","«Aves» é mais geral do que «gaivotas»: hiperonímia.",""],
+ ["O poeta trazia {{um cravo}} na lapela. A [[flor]] era vermelha.","hiperonimia","«Flor» é mais geral do que «cravo»: hiperonímia.",""],
+ ["Os {{cães}} ladravam no bairro. Os [[animais]] tinham fome.","hiperonimia","«Animais» inclui os cães: palavra mais geral, hiperonímia.",""],
+ ["No mercado havia muito {{peixe}}. As [[sardinhas]] eram as mais baratas.","hiponimia","As sardinhas são um tipo de peixe, mais específico: hiponímia.",""],
+ ["O poeta lia muitos {{livros}}. Os [[romances]] eram os seus preferidos.","hiponimia","Os romances são um tipo de livro: palavra mais específica, hiponímia.",""],
+ ["Havia {{árvores}} por toda a quinta; os [[pinheiros]] davam sombra.","hiponimia","O pinheiro é um tipo de árvore: hiponímia.",""],
+ ["As {{teclas}} estavam gastas; o [[piano]] era muito antigo.","holonimia","As teclas são parte do piano. A parte vem primeiro e é retomada pelo todo: holonímia.",""],
+ ["A {{porta}} rangia sempre; a [[casa]] precisava de obras.","holonimia","A porta é parte da casa. Da parte para o todo: holonímia.",""],
+ ["O poeta entrou na {{loja}}. O [[balcão]] estava cheio de ferragens.","meronimia","O balcão é parte da loja. Do todo para a parte: meronímia.",""],
+ ["Olhou para {{a árvore}}: os [[ramos]] dançavam ao vento.","meronimia","Os ramos são parte da árvore: meronímia.",""],
+ ["{{Lisboa}} acordava devagar. [[A cidade das sete colinas]] cheirava a maresia.","equivalente","Lisboa é retomada por uma expressão que a identifica por uma característica: expressão equivalente.",""],
+ ["{{Camões}} é evocado por Cesário. [[O autor de «Os Lusíadas»]] aparece em «O Sentimento dum Ocidental».","equivalente","Camões é retomado por uma expressão que o identifica pela obra: expressão equivalente.",""]
+],
+medio:[
+ ["Nas nossas ruas, [[ao anoitecer]],\nHá tal soturnidade, há tal melancolia,","temporal","«Ao anoitecer» situa o cenário num momento do dia: expressão de tempo, coesão temporal.",OSO,["interfrasica","anafora"]],
+ ["Há {{tal}} soturnidade, há {{tal}} melancolia,\n[[Que]] as sombras, o bulício, o Tejo, a maresia\nDespertam-me um desejo absurdo de sofrer.","interfrasica","«Tal… que» forma uma estrutura consecutiva: o «que» introduz a consequência da soturnidade. É um conector, logo coesão interfrásica. Não é o pronome relativo, porque não retoma nenhum nome.",OSO,["anafora","catafora"]],
+ ["Vêm sacudindo as ancas opulentas!\n[[Seus]] troncos varonis recordam-me pilastras;","anafora","«Seus» é um possessivo que retoma as varinas, de que o poeta vinha a falar: anáfora.",OSO,["elipse","catafora"]],
+ ["E algumas, à cabeça, embalam nas canastras\n{{Os filhos}} [[que]] depois naufragam nas tormentas.","anafora","Aqui «que» é pronome relativo: retoma «os filhos». Um relativo que retoma o antecedente é anáfora.",OSO,["interfrasica","catafora"]],
+ ["Descalças! Nas descargas de carvão,\nDesde [[manhã]] à {{noite}}, a bordo das fragatas;","antonimia","«Manhã» e «noite» são opostos e juntos marcam o dia de trabalho inteiro: antonímia.",OSO,["temporal","sinonimia"]],
+ ["E os {{edifícios}}, com as [[chaminés]], e a turba\nToldam-se duma cor monótona e londrina.","meronimia","As chaminés são parte dos edifícios, que aparecem primeiro: do todo para a parte, meronímia.",OSO,["holonimia","hiponimia"]],
+ ["Voltam os calafates, aos magotes,\nDe jaquetão ao ombro, enfarruscados, secos;\n[[_]] Embrenho-me, a cismar, por boqueirões, por becos,","elipse","O sujeito «eu» não está escrito, mas percebe-se pela forma verbal «embrenho-me»: elipse do sujeito.",OSO,["anafora","frasica"]],
+ ["As {{varinas}} apinhavam-se no bairro. Aquelas [[mulheres]] trabalhavam desde manhã à noite.","hiperonimia","«Mulheres» é mais geral do que «varinas» (toda a varina é mulher, nem toda a mulher é varina): hiperonímia.","",["sinonimia","equivalente"]],
+ ["As {{vigas}} rangiam com o peso. Todo o [[edifício]] estremecia.","holonimia","As vigas são parte do edifício. A parte vem primeiro e é retomada pelo todo: holonímia.","",["meronimia","hiperonimia"]],
+ ["[[Ela]] apareceu de repente, com a giga à cabeça: {{a rapariga da horta}}.","catafora","«Ela» aparece antes de sabermos de quem se trata; o referente só surge no fim. Pronome que antecipa: catáfora.","",["anafora","elipse"]],
+ ["Ocorriam-lhe muitas {{cidades}}: [[Madrid, Paris, Berlim]].","hiponimia","Madrid, Paris e Berlim são exemplos concretos de cidades, palavras mais específicas: hiponímia.","",["hiperonimia","meronimia"]],
+ ["{{Lisboa}} oprimia o poeta. [[A capital do reino]] parecia-lhe uma prisão de gás e de sombras.","equivalente","Lisboa é retomada por uma expressão que a identifica por uma característica (ser a capital): expressão equivalente.","",["hiperonimia","sinonimia"]],
+ ["[[Vazam-se]] {{os arsenais e as oficinas}};","frasica","O verbo vem antes do sujeito mas está no plural porque concorda com «os arsenais e as oficinas»: coesão frásica.",OSO,["elipse","temporal"]],
+ ["O poeta deambulava pelos {{becos}} da Baixa. Aquelas [[vielas]] escuras cheiravam a peixe.","sinonimia","«Becos» e «vielas» designam o mesmo tipo de rua estreita: substituição por sinónimo.","",["hiperonimia","repeticao"]],
+ ["As varinas trabalhavam descalças; [[por isso]], tinham os pés feridos.","interfrasica","«Por isso» introduz a consequência do que foi dito antes: conector conclusivo/consecutivo, coesão interfrásica.","",["temporal","anafora"]],
+ ["[[Dez horas da manhã]]; os transparentes\nMatizam uma casa apalaçada;","temporal","O poema abre a situar a cena numa hora do dia: coesão temporal.",NBM,["interfrasica","frasica"]],
+ ["Era uma {{tarde}} lenta. Naquela [[tarde]], o poeta não escreveu nada.","repeticao","«Tarde» é repetida. O demonstrativo «naquela» ajuda, mas a palavra realçada é a repetição do nome.","",["anafora","temporal"]],
+ ["O poeta queria fugir para o {{campo}}. Na [[cidade]], sentia-se doente.","antonimia","Neste texto, campo e cidade funcionam como opostos (saúde e doença): antonímia.","",["hiponimia","sinonimia"]],
+ ["O poeta parou junto do {{chafariz}}, [[onde]] as mulheres enchiam os cântaros.","anafora","«Onde» é um relativo que retoma «chafariz»: anáfora.","",["interfrasica","catafora"]],
+ ["{{Os calafates}} e {{os carpinteiros}} saíam ao fim do dia; [[estes]] mais cansados do que aqueles.","anafora","O demonstrativo «estes» retoma o mais próximo dos dois (os carpinteiros), e «aqueles» o mais distante: anáfora.","",["catafora","elipse"]],
+ ["O poeta gostava de {{passear sozinho}}. [[Isso]] fazia-o sentir-se livre.","anafora","«Isso» retoma toda a ação de passear sozinho: anáfora.","",["catafora","equivalente"]],
+ ["{{A rapariga}}, [[cuja]] giga estava cheia, sorria aos fregueses.","anafora","«Cuja» é um relativo que retoma «a rapariga» (a giga dela): anáfora.","",["frasica","catafora"]],
+ ["As varinas, [[que]] vinham do cais, gritavam pregões.","anafora","«Que» é pronome relativo e retoma «as varinas»: anáfora.","",["interfrasica","elipse"]],
+ ["Ainda que [[a]] detestasse, o poeta nunca deixou {{Lisboa}}.","catafora","O pronome «a» aparece antes de «Lisboa», a que se refere: catáfora.","",["anafora","elipse"]],
+ ["Quem [[o]] lê pela primeira vez fica surpreendido com {{Cesário}}.","catafora","O pronome «o» antecipa «Cesário», que só aparece no fim: catáfora.","",["anafora","equivalente"]],
+ ["Repara [[nisto]]: {{nenhum poema fala da cidade sem falar do campo}}.","catafora","«Nisto» aponta para o que vem depois dos dois pontos: catáfora.","",["anafora","interfrasica"]],
+ ["As varinas vendiam peixe; as obreiras, [[_]] roupa.","elipse","Na segunda parte omite-se o verbo «vendiam»: elipse.","",["frasica","antonimia"]],
+ ["O poeta queria ir para o campo, mas não podia [[_]].","elipse","Depois de «podia» omite-se «ir para o campo», já conhecido: elipse.","",["interfrasica","anafora"]],
+ ["— Quem escreveu «De Tarde»?\n— [[_]] Cesário Verde.","elipse","A resposta omite «Foi» ou «Escreveu-o»: elipse.","",["anafora","catafora"]],
+ ["[[Ouviam-se]] ao longe {{os sinos}} da igreja.","frasica","O verbo vem antes do sujeito, mas está no plural porque concorda com «os sinos»: coesão frásica.","",["elipse","temporal"]],
+ ["{{O poeta e a rapariga}} ficaram [[calados]].","frasica","Com um sujeito masculino e feminino, o adjetivo vai para o masculino plural: concordância, coesão frásica.","",["elipse","anafora"]],
+ ["[[Eram]] {{dez horas}} da manhã.","frasica","«Eram» está no plural porque concorda com «dez horas»: coesão frásica.","",["temporal","elipse"]],
+ ["[[Apesar de]] estar doente, o poeta continuava a trabalhar na loja.","interfrasica","«Apesar de» introduz uma concessão: coesão interfrásica.","",["temporal","anafora"]],
+ ["O poeta fugia para o campo, [[visto que]] a cidade o adoecia.","interfrasica","«Visto que» é um conector causal: coesão interfrásica.","",["temporal","anafora"]],
+ ["Não detestava o campo; [[pelo contrário]], adorava-o.","interfrasica","«Pelo contrário» liga as duas ideias por oposição: coesão interfrásica.","",["antonimia","temporal"]],
+ ["[[Por um lado]], a cidade fascinava-o; {{por outro}}, sufocava-o.","interfrasica","«Por um lado… por outro» organiza e contrapõe as ideias: coesão interfrásica.","",["temporal","repeticao"]],
+ ["Trabalhava tanto [[que]] não tinha tempo para escrever.","interfrasica","Aqui «que» não retoma nada: introduz a consequência de «tanto». Conector consecutivo, coesão interfrásica.","",["anafora","catafora"]],
+ ["Quando o poeta chegou à praça, a rapariga já [[tinha partido]].","temporal","O mais-que-perfeito «tinha partido» mostra que a partida aconteceu antes da chegada. A correlação dos tempos verbais é coesão temporal.","",["interfrasica","frasica"]],
+ ["[[Nessa altura]], Lisboa crescia para os bairros novos.","temporal","«Nessa altura» situa o facto no tempo: coesão temporal.","",["anafora","interfrasica"]],
+ ["[[Ao fim de três dias]] de chuva, voltou o sol.","temporal","A expressão marca quando o sol voltou: coesão temporal.","",["interfrasica","frasica"]],
+ ["{{Felizes}} os que partem! [[Felizes]] os que nunca voltam!","repeticao","«Felizes» é repetido para dar ênfase: repetição.","",["sinonimia","anafora"]],
+ ["Ele queria o {{campo}}: o [[campo]] das papoulas e da infância.","repeticao","«Campo» volta a ser usado para insistir na ideia: repetição.","",["catafora","sinonimia"]],
+ ["Havia nas ruas uma enorme {{soturnidade}}; aquela [[tristeza]] pesava sobre todos.","sinonimia","«Tristeza» retoma «soturnidade» com sentido equivalente: sinonímia.","",["hiperonimia","repeticao"]],
+ ["O poeta {{detestava}} o barulho; [[odiava]] também o cheiro a gás.","sinonimia","«Odiava» e «detestava» têm o mesmo significado: sinonímia.","",["antonimia","repeticao"]],
+ ["A rapariga era {{pequenina}}; ninguém reparava naquela figura tão [[miúda]].","sinonimia","«Miúda» tem o mesmo sentido de «pequenina»: sinonímia.","",["hiponimia","antonimia"]],
+ ["As naus {{partiam}} cheias de esperança e [[chegavam]] vazias.","antonimia","«Chegar» é o oposto de «partir»: antonímia.","",["temporal","sinonimia"]],
+ ["Da {{luz}} da manhã passava-se à [[sombra]] das ruas estreitas.","antonimia","«Sombra» opõe-se a «luz»: antonímia.","",["temporal","sinonimia"]],
+ ["O que para os operários era {{trabalho}}, para os burgueses era [[lazer]].","antonimia","«Lazer» opõe-se a «trabalho»: antonímia.","",["sinonimia","hiponimia"]],
+ ["Os {{calafates}} e os {{carpinteiros}} saíam das obras. Aqueles [[operários]] mal ganhavam para comer.","hiperonimia","«Operários» é mais geral e inclui calafates e carpinteiros: hiperonímia.","",["sinonimia","anafora"]],
+ ["Ela trazia {{damascos}} e {{melão}} no cesto. A [[fruta]] era para a merenda.","hiperonimia","«Fruta» inclui damascos e melão: hiperonímia.","",["holonimia","hiponimia"]],
+ ["Passou {{uma carruagem}} a toda a velocidade; o [[veículo]] quase atropelou a varina.","hiperonimia","«Veículo» é mais geral do que «carruagem»: hiperonímia. Não é sinonímia, porque nem todo o veículo é uma carruagem.","",["sinonimia","equivalente"]],
+ ["Na giga havia {{hortaliça}} fresca: [[couves]], [[alfaces]] e [[agriões]].","hiponimia","Couves, alfaces e agriões são tipos de hortaliça: hiponímia.","",["meronimia","hiperonimia"]],
+ ["Os {{instrumentos}} afinavam; os [[violinos]] eram os mais agudos.","hiponimia","O violino é um tipo de instrumento: hiponímia.","",["meronimia","hiperonimia"]],
+ ["Partiram-se os {{remos}}, e o [[barco]] ficou à mercê da corrente.","holonimia","Os remos são parte do barco. Da parte para o todo: holonímia.","",["meronimia","hiperonimia"]],
+ ["Os {{dedos}} do poeta tremiam; toda a [[mão]] estava gelada.","holonimia","Os dedos são parte da mão: holonímia.","",["meronimia","hiponimia"]],
+ ["A {{casa apalaçada}} brilhava ao sol; as [[janelas]] estavam abertas.","meronimia","As janelas são parte da casa: do todo para a parte, meronímia.","",["holonimia","hiponimia"]],
+ ["O poeta olhava para {{a cidade}} do alto; os [[telhados]] fumegavam.","meronimia","Os telhados são parte da cidade vista do alto: meronímia.","",["holonimia","hiponimia"]],
+ ["{{O Tejo}} brilhava ao longe. [[O grande rio de Lisboa]] parecia de chumbo.","equivalente","O Tejo é retomado por uma expressão inteira que o descreve: expressão equivalente. Se fosse só «o rio», seria hiperonímia.","",["hiperonimia","sinonimia"]],
+ ["{{Cesário Verde}} morreu de tuberculose. [[O poeta das ruas de Lisboa]] não chegou a ver o seu livro publicado.","equivalente","Cesário é retomado por uma expressão que o caracteriza: expressão equivalente.","",["hiperonimia","anafora"]]
+],
+dificil:[
+ ["Batem os carros de aluguer, ao fundo,\nLevando à via-férrea {{os que se vão}}. [[_]] Felizes!","elipse","«Felizes!» quer dizer «[eles são] felizes», os que se vão. Sujeito e verbo ficam omitidos: elipse.",OSO,["frasica","catafora"]],
+ ["E evoco, então, as crónicas navais:\n{{Mouros, baixéis, heróis}}, [[tudo]] ressuscitado!","anafora","«Tudo» é um pronome indefinido que resume e retoma a enumeração anterior. Por ser pronome, é anáfora e não hiperonímia.",OSO,["hiperonimia","catafora"]],
+ ["Naquele pic-nic de burguesas,\nHouve [[uma coisa simplesmente bela]],\n(…)\n{{Foi quando tu, descendo do burrico,\nFoste colher}}…","catafora","«Uma coisa simplesmente bela» anuncia algo que só se explica na estrofe seguinte (o momento em que «tu» foste colher as papoulas): catáfora.",DT,["anafora","hiperonimia"]],
+ ["A um granzoal azul de grão-de-bico\n{{Um ramalhete rubro de papoulas}}.\n(…)\nEra o supremo encanto da merenda\n[[O ramalhete rubro das papoulas]]!","repeticao","A expressão do início volta quase igual no último verso do poema: repetição (reiteração), que dá ênfase e fecha o poema em círculo.",DT,["sinonimia","anafora"]],
+ ["E {{os edifícios, com as chaminés, e a turba}}\n[[Toldam-se]] duma cor monótona e londrina.","frasica","«Toldam-se» está no plural porque o sujeito é composto (os edifícios… e a turba). A concordância sujeito-verbo é coesão frásica.",OSO,["elipse","anafora"]],
+ ["Que as sombras, o bulício, {{o Tejo}}, a maresia\n(…)\nReluz, viscoso, [[o rio]];","hiperonimia","«O rio» é uma palavra mais geral que inclui o Tejo: hiperonímia. Não é sinonímia, porque «rio» não significa o mesmo que «Tejo».",OSO,["sinonimia","equivalente"]],
+ ["O céu parece baixo e de neblina,\n{{O gás extravasado}} enjoa-me, [[_]] perturba;","elipse","Em «perturba» ficam omitidos o sujeito (o gás) e o complemento (me): «[o gás] perturba[-me]». Elipse.",OSO,["frasica","anafora"]],
+ ["Semelham-se a gaiolas, com viveiros,\n{{As edificações}} somente emadeiradas:\nComo morcegos, ao cair das badaladas,\nSaltam de [[viga]] em viga os mestres carpinteiros.","meronimia","As vigas são parte das edificações referidas antes: do todo para a parte, meronímia.",OSO,["holonimia","repeticao"]],
+ ["Desde manhã à noite, a bordo das fragatas;\nE apinham-se {{num bairro}} [[aonde]] miam gatas,","anafora","«Aonde» é um advérbio relativo que retoma «bairro». Retoma o antecedente: anáfora.",OSO,["interfrasica","temporal"]],
+ ["E algumas, à cabeça, embalam nas canastras\nOs filhos que [[depois]] naufragam nas tormentas.","temporal","«Depois» situa o naufrágio num tempo posterior ao da infância embalada nas canastras: coesão temporal.",OSO,["interfrasica","anafora"]],
+ ["Houve uma coisa simplesmente bela,\nE que, sem ter história nem grandezas,\n[[Em todo o caso]] dava uma aguarela.","interfrasica","«Em todo o caso» é um conector com valor concessivo/adversativo (apesar de não ter grandezas, dava uma aguarela): coesão interfrásica.",DT,["temporal","anafora"]],
+ ["Naquele {{pic-nic}} de burguesas,\n(…)\nEra o supremo encanto da [[merenda]]","sinonimia","«Merenda» retoma o «pic-nic» do primeiro verso com um sentido equivalente: sinonímia.",DT,["hiperonimia","repeticao"]],
+ ["{{Cesário}} passava os dias na loja de ferragens da família. À noite, [[o jovem comerciante]] transformava-se em poeta.","equivalente","Cesário é retomado por uma expressão que o descreve por uma característica (a profissão): expressão equivalente. Não é hiperonímia porque não se passa a uma classe mais geral do mesmo nome.","",["hiperonimia","anafora"]],
+ ["Para o poeta, o {{campo}} era saúde; a [[cidade]], doença e prisão.","antonimia","Campo e cidade aparecem como opostos. Há também uma elipse (a cidade [era] doença), mas a palavra realçada é «cidade», ligada a «campo» pelo contraste: antonímia.","",["elipse","hiponimia"]],
+ ["A rapariga vendia {{hortaliças}} pela cidade; os [[espinafres]] e as [[alfaces]] murchavam ao sol.","hiponimia","Espinafres e alfaces são tipos de hortaliça, mais específicos: hiponímia. Não é meronímia, porque não são partes de uma hortaliça.","",["meronimia","hiperonimia"]],
+ ["Rangiam os {{mastros}} e as {{amarras}}; a [[fragata]] inteira gemia contra o cais.","holonimia","Mastros e amarras são partes da fragata. As partes vêm primeiro e são retomadas pelo todo: holonímia.","",["meronimia","hiperonimia"]],
+ ["[[_]] Vêm sacudindo as ancas opulentas!\nSeus troncos varonis recordam-me pilastras;","elipse","O sujeito de «Vêm» (as varinas) não está escrito: elipse. «Seus», que vem a seguir, já seria anáfora, mas o realce está no lugar do sujeito omitido, antes de «Vêm».",OSO,["anafora","catafora"]],
+ ["O poeta preferia o campo; a mulher, [[_]] a cidade.","elipse","Na segunda parte omite-se o verbo «preferia». Campo e cidade são opostos, mas o realce está no lugar do verbo que falta: elipse.","",["antonimia","frasica"]],
+ ["[[Eles]], {{os burgueses}}, nunca entenderiam aquela poesia.","catafora","«Eles» aparece primeiro e só depois se diz quem são: catáfora.","",["anafora","equivalente"]],
+ ["Queria {{uma vida simples}}. [[Tal]] desejo nunca se cumpriu.","anafora","O determinante «tal» retoma a ideia anterior (querer uma vida simples): anáfora.","",["catafora","equivalente"]],
+ ["Visitou o {{bairro moderno}}, [[no qual]] se erguiam casas apalaçadas.","anafora","«No qual» é um relativo que retoma «bairro moderno»: anáfora.","",["interfrasica","catafora"]],
+ ["As varinas e {{o poeta}} cruzaram-se no cais; os olhos [[dele]] seguiram-nas.","anafora","«Dele» retoma «o poeta», e não as varinas, porque está no masculino singular: anáfora.","",["catafora","frasica"]],
+ ["[[Foi assim]] que ele a viu pela primeira vez: {{de costas, a pousar a giga}}.","catafora","«Assim» anuncia uma maneira que só se descreve depois dos dois pontos: catáfora.","",["anafora","temporal"]],
+ ["Ao [[vê-la]], o poeta parou: {{a rapariga da giga}} sorria-lhe.","catafora","O pronome «la» refere-se à rapariga, que só é nomeada depois: catáfora.","",["anafora","elipse"]],
+ ["Comprou pão; [[_]] queijo, não, porque era caro.","elipse","«[Comprou] queijo, não»: o verbo é omitido. Elipse.","",["interfrasica","frasica"]],
+ ["A cidade tinha luz, mas [[_]] não tinha alma.","elipse","O sujeito «a cidade» não é repetido depois de «mas». O «mas» é conector, mas o realce está no sujeito omitido: elipse.","",["interfrasica","anafora"]],
+ ["Não só escrevia poesia, [[como também]] geria a loja da família.","interfrasica","«Não só… como também» é um conector aditivo: coesão interfrásica.","",["temporal","repeticao"]],
+ ["[[Caso]] o poeta tivesse sobrevivido, teria publicado o livro.","interfrasica","«Caso» introduz uma condição: conector condicional, coesão interfrásica. Não é temporal, apesar dos tempos verbais.","",["temporal","frasica"]],
+ ["Trabalhava de manhã à noite; [[ou seja]], não tinha vida própria.","interfrasica","«Ou seja» reformula e explica o que foi dito: conector explicativo, coesão interfrásica.","",["sinonimia","temporal"]],
+ ["Escrevia [[para que]] a cidade não o esquecesse.","interfrasica","«Para que» introduz uma finalidade: coesão interfrásica.","",["temporal","anafora"]],
+ ["Não saiu nesse dia, [[pois]] a chuva não parava.","interfrasica","«Pois» introduz a causa: conector causal, coesão interfrásica.","",["temporal","elipse"]],
+ ["Quando chegou ao cais, os barcos [[já tinham partido]].","temporal","O mais-que-perfeito mostra que a partida foi antes da chegada. O realce está na forma verbal, não no «quando»: coesão temporal.","",["interfrasica","frasica"]],
+ ["[[Entretanto]], a rapariga tinha desaparecido na multidão.","temporal","«Entretanto» situa o desaparecimento num tempo paralelo ao que se contava: coesão temporal. Alguns manuais chamam-lhe conector temporal, por isso na resposta escrita também se aceita «interfrasica».","",["anafora","elipse"],1],
+ ["[[Àquela hora]], já as lojas da Baixa tinham fechado.","temporal","A expressão situa a ação numa hora. Tem um demonstrativo, mas a expressão no seu todo é uma marca de tempo: coesão temporal.","",["anafora","catafora"]],
+ ["Primeiro, observou a rapariga; [[a seguir]], imaginou-a feita de legumes.","temporal","«A seguir» marca a ordem das ações: coesão temporal. Alguns manuais chamam-lhe conector temporal, por isso na resposta escrita também se aceita «interfrasica».","",["anafora","catafora"],1],
+ ["{{Nem o poeta nem a rapariga}} [[disseram]] uma palavra.","frasica","O verbo está no plural porque concorda com o sujeito composto: coesão frásica.","",["elipse","interfrasica"]],
+ ["[[Vendem-se]] {{flores}} frescas na praça.","frasica","«Vendem-se» está no plural porque concorda com «flores», que é o sujeito: coesão frásica.","",["elipse","anafora"]],
+ ["{{A multidão}} de operários [[atravessava]] a praça.","frasica","O verbo concorda com o núcleo do sujeito, «multidão», que é singular: coesão frásica.","",["hiperonimia","elipse"]],
+ ["Encontrou {{a mãe e a irmã}} [[sentadas]] à janela.","frasica","«Sentadas» está no feminino plural porque se refere às duas: concordância, coesão frásica.","",["anafora","elipse"]],
+ ["E era a {{cidade}}, sempre a [[cidade]], que lhe roubava o ar.","repeticao","«Cidade» é repetida para insistir: repetição.","",["anafora","sinonimia"]],
+ ["{{Descalças}}! [[Descalças]] desde manhã à noite!","repeticao","A mesma palavra volta logo a seguir, com ênfase: repetição.","",["elipse","frasica"]],
+ ["O poeta sentia {{um desejo absurdo}} de sofrer; aquela [[vontade insensata]] crescia ao anoitecer.","sinonimia","«Vontade insensata» tem o mesmo sentido de «desejo absurdo»: sinonímia.","",["equivalente","repeticao"]],
+ ["{{O bulício}} da Baixa cansava-o; aquele [[burburinho]] não parava nunca.","sinonimia","«Burburinho» é sinónimo de «bulício»: sinonímia.","",["hiperonimia","repeticao"]],
+ ["O poeta [[odiava]] a cidade, embora a {{amasse}} também.","antonimia","«Odiar» opõe-se a «amar». Há um conector («embora»), mas o realce está em «odiava»: antonímia.","",["interfrasica","sinonimia"]],
+ ["Não era {{velha}} a vendedeira; era [[nova]], apesar das rugas.","antonimia","«Nova» é o oposto de «velha»: antonímia.","",["sinonimia","interfrasica"]],
+ ["Para o poeta, o {{silêncio}} do campo curava o que o [[bulício]] da cidade adoecia.","antonimia","«Bulício» (barulho, agitação) opõe-se a «silêncio»: antonímia.","",["sinonimia","hiponimia"]],
+ ["{{Madrid}}, {{Paris}} e {{Berlim}} povoavam os sonhos do poeta; essas [[cidades]] eram o mundo moderno.","hiperonimia","«Cidades» é mais geral e inclui as três. O demonstrativo «essas» é anafórico, mas o realce está no nome: hiperonímia.","",["anafora","holonimia"]],
+ ["Gostava de toda a {{poesia}}; os [[sonetos]], porém, aborreciam-no.","hiponimia","O soneto é um tipo de poema, mais específico: hiponímia.","",["meronimia","antonimia"]],
+ ["Na doca havia {{embarcações}} de todos os tamanhos: [[fragatas]], [[botes]] e [[baixéis]].","hiponimia","Fragatas, botes e baixéis são tipos de embarcação: hiponímia.","",["meronimia","catafora"]],
+ ["Doíam-lhe os {{pulmões}}; o [[corpo]] inteiro parecia ceder.","holonimia","Os pulmões são parte do corpo. Da parte para o todo: holonímia.","",["hiperonimia","meronimia"]],
+ ["Os {{versos}} dele eram precisos; cada [[poema]] parecia um quadro.","holonimia","Os versos são partes do poema, que é o todo: holonímia. Não é hiperonímia, porque um verso não é um tipo de poema.","",["hiperonimia","meronimia"]],
+ ["Abriu {{o livro}} ao acaso; as [[páginas]] cheiravam a humidade.","meronimia","As páginas são parte do livro: meronímia.","",["holonimia","hiponimia"]],
+ ["Releu {{o poema}}; a última [[estrofe]] ainda não estava bem.","meronimia","A estrofe é parte do poema: meronímia. Não é hiponímia, porque a estrofe não é um tipo de poema.","",["hiponimia","holonimia"]],
+ ["{{Cesário Verde}} pintava com palavras. [[O pintor da poesia portuguesa]] via Lisboa como uma tela.","equivalente","Cesário é retomado por uma expressão que o caracteriza: expressão equivalente.","",["hiperonimia","sinonimia"]],
+ ["{{O Sol}} ia descendo. [[O astro-rei]] tingia de vermelho as papoulas.","equivalente","«O astro-rei» é uma perífrase que designa o Sol: expressão equivalente.","",["sinonimia","hiperonimia"]]
+]};
+var LEVELS=[["facil","Fácil","Frases de dificuldade média"],["medio","Médio","Frases difíceis, já com versos de Cesário"],["dificil","Difícil","Frases muito difíceis e armadilhas"]];
+var MODES=[["mc","Escolha múltipla","Quatro caixas, escolhes uma (teclas 1 a 4)"],["write","Resposta escrita","Escreves o nome, em minúsculas e sem acentos"]];
+
+/* ---------- normalising answers ---------- */
+var FILL=["coesao","por","de","da","do","a","o","e","gramatical","lexical","referencial","substituicao","mecanismo"];
+function bare(s){return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g," ").trim()}
+function core(s){return bare(s).split(" ").filter(function(w){return w&&FILL.indexOf(w)<0}).join(" ")}
+
+/* ---------- screens ---------- */
+var SCREENS=["home","defs","memo","setup","quiz","end"];
+function show(id){
+  SCREENS.forEach(function(x){$(x).hidden=x!==id});
+  if(id!=="memo")stopTimer();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll("[data-go]").forEach(function(b){b.addEventListener("click",function(){go(b.dataset.go)})});
+function go(id){show(id);if(id==="memo")memoView(memoMode);if(id==="setup")renderSetup()}
+
+/* ---------- 1. definitions ---------- */
+function renderDefs(){
+  var box=$("defList"),cur="";
+  D.forEach(function(d){
+    if(d.g!==cur){cur=d.g;var h=document.createElement("div");h.className="grouptitle";h.textContent="Coesão "+d.g.toLowerCase();box.appendChild(h)}
+    var c=document.createElement("article");c.className="def";
+    c.innerHTML='<div class="top"><span class="nm" tabindex="0"></span><span class="gp"></span></div><p></p><p class="mot"><b>Motivo:</b> </p><p class="ex"></p>';
+    c.querySelector(".nm").textContent=d.nome;
+    c.querySelector(".gp").textContent=d.g+(d.s?" · "+d.s:"");
+    c.children[1].textContent=d.def;
+    c.querySelector(".mot").appendChild(document.createTextNode(d.mot));
+    c.querySelector(".ex").innerHTML="Exemplo: "+fmt(d.ex);
+    var nm=c.querySelector(".nm");
+    nm.addEventListener("click",function(){nm.classList.toggle("show")});
+    nm.addEventListener("keydown",function(e){if(e.key==="Enter")nm.classList.toggle("show")});
+    box.appendChild(c);
+  });
+}
+$("hideNames").onclick=function(){
+  var on=$("defs").classList.toggle("hide-names");
+  this.setAttribute("aria-pressed",on);this.textContent=on?"Mostrar os nomes":"Esconder os nomes";
+  document.querySelectorAll(".def .nm.show").forEach(function(n){n.classList.remove("show")});
+};
+$("defsQuiz").onclick=function(){startQuiz("defs","mc")};
+
+function defsItems(){
+  var items=[];
+  D.forEach(function(d){
+    items.push({tag:"Qual é a coesão?",
+      html:'<p class="ask">Que coesão corresponde a esta definição?</p><div class="defbox"><p>'+esc(d.def)+'</p><p><b>Motivo:</b> '+esc(d.mot)+'</p></div>',
+      options:shuffle([d.k].concat(distractors(d.k))).map(mechOpt),answer:d.k,answerText:d.nome,
+      expl:"Exemplo: "+d.ex,legend:false});
+    var ds=distractors(d.k);
+    items.push({tag:"Qual é a definição?",
+      html:'<p class="ask">Qual é a definição de</p><p class="nomebig">'+esc(d.nome)+'</p>',
+      options:shuffle([d.k].concat(ds)).map(function(k){return {id:k,main:BY[k].def,long:true}}),answer:d.k,answerText:d.def,
+      expl:"Motivo: "+d.mot,legend:false});
+  });
+  return items;
+}
+
+/* ---------- 2. memorise names ---------- */
+var MAP=[
+ {id:"gramatical",lab:"Gramatical",head:true,alias:["gramatical","coesao gramatical"],kids:[
+   {id:"frasica",lab:"Frásica",alias:BY.frasica.alias},
+   {id:"interfrasica",lab:"Interfrásica",alias:BY.interfrasica.alias},
+   {id:"temporal",lab:"Temporal",alias:BY.temporal.alias},
+   {id:"referencial",lab:"Referencial",head:true,alias:["referencial"],kids:[
+     {id:"anafora",lab:"Anáfora",alias:BY.anafora.alias},{id:"catafora",lab:"Catáfora",alias:BY.catafora.alias},{id:"elipse",lab:"Elipse",alias:BY.elipse.alias}]}]},
+ {id:"lexical",lab:"Lexical",head:true,alias:["lexical"],kids:[
+   {id:"repeticao",lab:"Repetição (reiteração)",alias:BY.repeticao.alias},
+   {id:"substituicao",lab:"Substituição",head:true,alias:["substituicao"],kids:[
+     {id:"sinonimia",lab:"Sinonímia",alias:BY.sinonimia.alias},{id:"antonimia",lab:"Antonímia",alias:BY.antonimia.alias},
+     {id:"hiperonimia",lab:"Hiperonímia",alias:BY.hiperonimia.alias},{id:"hiponimia",lab:"Hiponímia",alias:BY.hiponimia.alias},
+     {id:"holonimia",lab:"Holonímia",alias:BY.holonimia.alias},{id:"meronimia",lab:"Meronímia",alias:BY.meronimia.alias},
+     {id:"equivalente",lab:"Expressão equivalente",alias:BY.equivalente.alias}]}]}
+];
+var SLOTS=[];(function walk(list){list.forEach(function(n){SLOTS.push(n);if(n.kids)walk(n.kids)})})(MAP);
+var R={found:{},t0:0,timer:0,hint:false,done:false},memoMode="write";
+
+function recallKey(input){
+  // lenient: case and accents ignored; leading category words dropped when more follows
+  var w=bare(input).split(" ").filter(function(x){return x&&["coesao","por","de","da","do"].indexOf(x)<0});
+  var full=w.join(" ");
+  while(w.length>1&&["gramatical","lexical","referencial","substituicao"].indexOf(w[0])>=0)w.shift();
+  return [full,w.join(" ")];
+}
+function renderMap(){
+  var box=$("map");box.innerHTML="";
+  MAP.forEach(function(top){
+    var br=document.createElement("div");br.className="branch";
+    br.appendChild(slotEl(top));
+    top.kids.forEach(function(k){
+      if(k.kids){var s=document.createElement("div");s.className="sub";s.appendChild(slotEl(k));
+        var s2=document.createElement("div");s2.className="sub";k.kids.forEach(function(x){s2.appendChild(slotEl(x))});s.appendChild(s2);br.appendChild(s);}
+      else br.appendChild(slotEl(k));
+    });
+    box.appendChild(br);
+  });
+  $("rCount").textContent=Object.keys(R.found).length+"/"+SLOTS.length;
+}
+function slotEl(n){
+  var d=document.createElement("div");d.className="slot"+(n.head?" head":"");d.id="slot-"+n.id;
+  if(R.found[n.id]){d.classList.add(R.found[n.id]==="lost"?"lost":"ok");d.textContent=n.lab}
+  else d.textContent=R.hint?n.lab.charAt(0)+" "+"·".repeat(Math.max(n.lab.replace(/\s.*/,"").length-1,2)):"?";
+  return d;
+}
+function resetRecall(){R={found:{},t0:0,timer:0,hint:false,done:false};stopTimer();$("rTime").textContent="0:00";$("rInput").value="";$("rInput").disabled=false;$("rHint").textContent="Mostrar primeiras letras";renderMap();showRecallBest()}
+function showRecallBest(){var b=store("coesao-mapa");$("rBest").textContent=b?"Melhor tempo: "+clock(+b):""}
+function clock(s){return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}
+function stopTimer(){if(R.timer){clearInterval(R.timer);R.timer=0}}
+function tickTimer(){$("rTime").textContent=clock(Math.floor((Date.now()-R.t0)/1000))}
+$("rInput").addEventListener("input",function(){
+  if(R.done)return;
+  if(!R.t0){R.t0=Date.now();R.timer=setInterval(tickTimer,500)}
+  var keys=recallKey(this.value);
+  var hit=SLOTS.filter(function(n){return !R.found[n.id]&&(n.alias.indexOf(keys[0])>=0||n.alias.indexOf(keys[1])>=0)})[0];
+  if(hit){R.found[hit.id]="ok";this.value="";renderMap();
+    if(Object.keys(R.found).length===SLOTS.length){finishRecall(true)}}
+});
+$("rForm").addEventListener("submit",function(e){e.preventDefault();var i=$("rInput");i.classList.remove("shake");void i.offsetWidth;if(i.value.trim())i.classList.add("shake")});
+$("rHint").onclick=function(){R.hint=!R.hint;this.textContent=R.hint?"Esconder primeiras letras":"Mostrar primeiras letras";renderMap()};
+$("rGiveUp").onclick=function(){if(R.done)return;SLOTS.forEach(function(n){if(!R.found[n.id])R.found[n.id]="lost"});finishRecall(false)};
+$("rReset").onclick=resetRecall;
+function finishRecall(won){
+  R.done=true;stopTimer();$("rInput").disabled=true;renderMap();
+  if(won){var s=Math.floor((Date.now()-R.t0)/1000);tickTimer();var b=store("coesao-mapa");
+    var used=R.hint?" (com pistas)":"";
+    if(!R.hint&&(!b||s<+b)){store("coesao-mapa",String(s));$("rBest").textContent="Novo recorde: "+clock(s)}
+    else $("rBest").textContent="Completo em "+clock(s)+used;}
+  else{var miss=SLOTS.filter(function(n){return R.found[n.id]==="lost"}).length;$("rBest").textContent="Faltaram "+miss+" (a vermelho). Carrega em Recomeçar para tentar de novo."}
+}
+function memoView(m){
+  memoMode=m;$("memoWrite").setAttribute("aria-pressed",m==="write");$("memoFalta").setAttribute("aria-pressed",m==="falta");
+  $("recall").hidden=m!=="write";$("faltaBox").hidden=m!=="falta";
+  if(m==="write"){if(!R.done&&!R.t0)resetRecall();else renderMap();showRecallBest()}
+  else stopTimer();
+}
+$("memoWrite").onclick=function(){memoView("write")};
+$("memoFalta").onclick=function(){memoView("falta")};
+$("faltaGo").onclick=function(){startQuiz("falta","mc")};
+
+function faltaItems(){
+  var groups=[{t:"Coesão textual divide-se em",m:MAP}];
+  (function walk(list){list.forEach(function(n){if(n.kids){groups.push({t:(n.id==="substituicao"?"Coesão lexical por substituição":n.id==="referencial"?"Coesão referencial":"Coesão "+n.lab.toLowerCase())+" divide-se em",m:n.kids});walk(n.kids)}})})(MAP);
+  var items=[];
+  groups.forEach(function(g){
+    g.m.forEach(function(miss){
+      var others=shuffle(SLOTS.filter(function(s){return g.m.indexOf(s)<0&&s.id!==miss.id})).slice(0,3);
+      var chips=g.m.map(function(n){return n===miss?'<span class="q">?</span>':'<span>'+esc(n.lab)+'</span>'}).join("");
+      items.push({tag:"Qual falta?",html:'<p class="ask">'+esc(g.t)+'…</p><div class="missing">'+chips+'</div>',
+        options:shuffle([miss].concat(others)).map(function(n){return {id:n.id,main:n.lab}}),answer:miss.id,answerText:miss.lab,
+        expl:g.t+": "+g.m.map(function(n){return n.lab}).join(", ")+".",legend:false});
+    });
+  });
+  return items;
+}
+
+/* ---------- 3. guess: setup ---------- */
+var level=store("coesao-level")||"facil",mode=store("coesao-mode")||"mc";
+function chipRow(box,list,val,set){
+  box.innerHTML="";
+  list.forEach(function(it){var b=document.createElement("button");b.type="button";b.className="chip";b.setAttribute("aria-pressed",it[0]===val);
+    b.innerHTML="<b></b><small></small>";b.firstChild.textContent=it[1];b.lastChild.textContent=it[2];b.onclick=function(){set(it[0])};box.appendChild(b)});
+}
+function renderSetup(){
+  chipRow($("levels"),LEVELS,level,function(v){level=v;store("coesao-level",v);renderSetup()});
+  chipRow($("modes"),MODES,mode,function(v){mode=v;store("coesao-mode",v);renderSetup()});
+  $("disc").hidden=mode!=="write";
+  var b=store("coesao-best-"+level+"-"+mode);
+  $("guessBest").textContent=b?"Melhor pontuação neste nível e modo: "+b:"Ainda sem pontuação neste nível e modo.";
+}
+$("guessGo").onclick=function(){startQuiz(level,mode)};
+
+function guessItems(lv){
+  var name=LEVELS.filter(function(l){return l[0]===lv})[0][1];
+  return BANK[lv].map(function(q){
+    var d=BY[q[1]];
+    return {tag:name,html:'<p class="ask">Que mecanismo de coesão está no elemento realçado?</p><blockquote class="frase">'+fmt(q[0])+'</blockquote>',
+      src:q[3]?"— "+q[3]:"",options:shuffle([q[1]].concat(distractors(q[1],q[4]))).map(mechOpt),
+      answer:q[1],answerText:d.nome,typed:d.alias[0],accept:q[5]?d.alias.concat(BY.interfrasica.alias):d.alias,expl:q[2],legend:true,raw:q[0]};
+  });
+}
+
+/* ---------- quiz engine ---------- */
+var ROUND=10,S=null;
+function startQuiz(ctx,m){
+  var pool=ctx==="defs"?defsItems():ctx==="falta"?faltaItems():guessItems(ctx);
+  S={ctx:ctx,mode:m,items:shuffle(pool).slice(0,ROUND),i:0,score:0,streak:0,right:0,missed:[],locked:false};
+  show("quiz");renderQ();
+}
+function renderHud(){
+  $("hQ").textContent=(S.i+1)+"/"+S.items.length;$("hS").textContent=S.score;$("hK").textContent=S.streak;
+  $("hBar").style.width=(100*S.i/S.items.length)+"%";
+}
+function renderQ(){
+  var it=S.items[S.i];S.locked=false;
+  $("qTag").textContent=it.tag+(S.mode==="write"?" · resposta escrita":"");
+  $("qPrompt").innerHTML=it.html;$("qSrc").textContent=it.src||"";$("qSrc").hidden=!it.src;$("qLegend").hidden=!it.legend;
+  $("fb").hidden=true;
+  var box=$("opts");box.innerHTML="";
+  if(S.mode==="mc"){
+    box.hidden=false;$("wForm").hidden=true;$("wNote").hidden=true;
+    it.options.forEach(function(o,n){
+      var b=document.createElement("button");b.type="button";b.className="opt"+(o.long?" long":"");b.dataset.id=o.id;
+      b.innerHTML='<span class="k">'+(n+1)+'</span><span class="t">'+(o.sub?"<small>"+esc(o.sub)+"</small>":"")+"<span>"+esc(o.main)+"</span></span>";
+      b.onclick=function(){choose(o.id)};box.appendChild(b);
+    });
+  }else{
+    box.hidden=true;$("wForm").hidden=false;$("wNote").hidden=false;
+    var inp=$("wInput");inp.value="";inp.disabled=false;
+    setTimeout(function(){inp.focus({preventScroll:true})},30);
+  }
+  renderHud();
+}
+function choose(id){
+  if(S.locked)return;
+  var it=S.items[S.i],ok=id===it.answer;
+  document.querySelectorAll("#opts .opt").forEach(function(b){
+    b.disabled=true;
+    if(b.dataset.id===it.answer)b.classList.add("right");
+    else if(b.dataset.id===id)b.classList.add("wrong");
+    else b.classList.add("dim");
+  });
+  result(ok,"");
+}
+$("wForm").addEventListener("submit",function(e){
+  e.preventDefault();if(S.locked)return;
+  var inp=$("wInput"),raw=inp.value.trim().replace(/\s+/g," ");
+  if(!raw){inp.classList.remove("shake");void inp.offsetWidth;inp.classList.add("shake");return}
+  var it=S.items[S.i];
+  var strict=/^[a-z0-9 \-(),.\/]+$/.test(raw);
+  var c=core(raw),right=it.accept.indexOf(c)>=0;
+  inp.disabled=true;
+  if(right&&strict)return result(true,"");
+  if(right)return result(false,"O nome estava certo, mas escreveste com maiúsculas, acentos ou cedilha, e por isso conta como errado. Escreve só minúsculas e sem acentos.");
+  if(!c){
+    var b=bare(raw);
+    if(/referencial/.test(b))return result(false,"«Referencial» é a categoria geral. Faltou dizer qual: anafora, catafora ou elipse.");
+    if(/substituicao|lexical/.test(b))return result(false,"Isso é a categoria geral. Faltou dizer o tipo concreto (sinonimia, hiperonimia, meronimia…).");
+  }
+  result(false,"Escreveste: «"+raw+"».");
+});
+function result(ok,note){
+  S.locked=true;
+  var it=S.items[S.i],fb=$("fb");
+  fb.className="fb "+(ok?"good":"bad");
+  if(ok){var pts=100+S.streak*20;S.score+=pts;S.streak++;S.right++;$("fbT").textContent="Certo! +"+pts}
+  else{S.streak=0;S.missed.push(it);$("fbT").textContent="Errado"}
+  $("fbN").hidden=!note;$("fbN").textContent=note;
+  $("fbA").innerHTML=ok?"":"Resposta certa: <b>"+esc(it.answerText)+"</b>"+(S.mode==="write"&&it.typed?" (escreve <code>"+esc(it.typed)+"</code>)":"");
+  $("fbA").hidden=ok;
+  $("fbE").innerHTML=it.expl.indexOf("Exemplo: ")===0?"Exemplo: "+fmt(it.expl.slice(9)):fmt(it.expl);
+  $("nextBtn").textContent=S.i>=S.items.length-1?"Ver resultado":"Seguinte";
+  fb.hidden=false;renderHud();
+  setTimeout(function(){$("nextBtn").focus({preventScroll:true});fb.scrollIntoView({block:"nearest",behavior:"smooth"})},40);
+}
+function advance(){if(!S||!S.locked)return;if(S.i>=S.items.length-1)return finish();S.i++;renderQ();$("quiz").scrollIntoView({block:"start"})}
+$("nextBtn").onclick=advance;
+$("quit").onclick=function(){go(S&&S.ctx==="defs"?"defs":S&&S.ctx==="falta"?"memo":"setup")};
+
+function finish(){
+  show("end");
+  var key="coesao-best-"+S.ctx+"-"+S.mode,prev=parseInt(store(key)||"0",10),rec=S.score>prev;
+  if(rec)store(key,String(S.score));
+  var title={defs:"Quiz de definições",falta:"Qual falta?"}[S.ctx]||("Adivinhar · "+LEVELS.filter(function(l){return l[0]===S.ctx})[0][1]);
+  var pct=S.right/S.items.length;
+  $("endTitle").textContent=title+(pct===1?": perfeito!":pct>=.7?": muito bem":pct>=.5?": quase lá":": a rever");
+  $("endScore").textContent=S.score;
+  $("endStats").innerHTML="<span>Acertos <b>"+S.right+"/"+S.items.length+"</b></span><span>"+(rec?"<b>Novo recorde!</b>":"Recorde <b>"+prev+"</b>")+"</span>";
+  var box=$("reviewBox");box.innerHTML="";
+  if(!S.missed.length){var p=document.createElement("p");p.textContent=S.ctx in BANK&&S.ctx!=="dificil"?"Sem erros. Experimenta o nível seguinte.":"Sem erros.";box.appendChild(p);return}
+  var h=document.createElement("h3");h.textContent="Para rever";box.appendChild(h);
+  var ul=document.createElement("ul");ul.className="review";
+  S.missed.forEach(function(it){
+    var li=document.createElement("li");
+    var q=it.raw?'<blockquote class="frase">'+fmt(it.raw)+'</blockquote>':it.html;
+    li.innerHTML=q+'<p class="ra">→ '+esc(it.answerText)+(S.mode==="write"&&it.typed?" ("+esc(it.typed)+")":"")+'</p><p class="small">'+(it.expl.indexOf("Exemplo: ")===0?"Exemplo: "+fmt(it.expl.slice(9)):fmt(it.expl))+'</p>';
+    ul.appendChild(li);
+  });
+  box.appendChild(ul);
+}
+$("again").onclick=function(){startQuiz(S.ctx,S.mode)};
+
+document.addEventListener("keydown",function(e){
+  if($("quiz").hidden||!S)return;
+  if(!S.locked&&S.mode==="mc"&&/^[1-4]$/.test(e.key)){var o=S.items[S.i].options[+e.key-1];if(o){e.preventDefault();choose(o.id)}}
+  else if(S.locked&&e.key==="Enter"&&document.activeElement!==$("nextBtn")){e.preventDefault();advance()}
+});
+
+renderDefs();renderSetup();
+})();
+</script>
+
+</body></html>
