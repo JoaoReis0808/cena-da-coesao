@@ -7,3 +7,7 @@ Jogo de estudo da coesão gramatical e lexical (Português, ensino secundário).
 - **Adivinhar a coesão**: 175 frases e versos de Cesário Verde, em três níveis, com escolha múltipla ou resposta escrita.
 
 Tudo está num único ficheiro, `index.html`, sem dependências além das Google Fonts.
+
+## Ledger Lab
+
+Jogo de treino para o exame de Financial Accounting (semanas 1–6): definições, as listas do curso para decorar e 610 perguntas em três níveis. Está em `ledger-lab/index.html`.
