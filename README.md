@@ -10,4 +10,4 @@ Tudo está num único ficheiro, `index.html`, sem dependências além das Google
 
 ## Ledger Lab
 
-Jogo de treino para o exame de Financial Accounting (semanas 1–6): definições, as listas do curso para decorar e 610 perguntas em três níveis. Está em `ledger-lab/index.html`.
+Jogo de treino para o exame de Financial Accounting (semanas 1–6): definições, as listas do curso para decorar e 564 perguntas em três níveis. Está em `ledger-lab/index.html`.
